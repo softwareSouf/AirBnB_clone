@@ -1,13 +1,9 @@
-#!/usr/bin/python3
-'''class inherent of BaseModel'''
+#!/usr/bin/env python3
+""" Class Amenity """
+
 from models.base_model import BaseModel
 
 
 class Amenity(BaseModel):
-    '''class amenity'''
-
+    """ Class Amenity """
     name = ""
-
-    def __init__(self, *args, **kwargs):
-        ''' initializes Amenity '''
-    super().__init__(*args, **kwargs)
