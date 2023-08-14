@@ -1,116 +1,90 @@
 #!/usr/bin/python3
-"""Test case FileStorage module"""
+""" Module of Unittests """
 import unittest
-import os
-import contextlib
-import json
-import models
-import pep8
-
-# class
-from models.engine.file_storage import FileStorage
 from models.base_model import BaseModel
-from models.amenity import Amenity
-from models.city import City
-from models.place import Place
-from models.review import Review
-from models.state import State
-from models.user import User
+from models.engine.file_storage import FileStorage
+from models import storage
+import os
+import json
 
 
-class TestFileStorage(unittest.TestCase):
-    """Test FileStorage"""
+class FileStorageTests(unittest.TestCase):
+    """ Suite of File Storage Tests """
 
-    def test_pep8_FileStorage(self):
-        """Tests pep8 style"""
-        style = pep8.StyleGuide(quiet=True)
-        p = style.check_files(['models/engine/file_storage.py'])
-        self.assertEqual(p.total_errors, 0, "fix pep8")
+    my_model = BaseModel()
 
-    def setUp(self):
-        """Sets up the class test"""
+    def testClassInstance(self):
+        """ Check instance """
+        self.assertIsInstance(storage, FileStorage)
 
-        self.b1 = BaseModel()
-        self.a1 = Amenity()
-        self.c1 = City()
-        self.p1 = Place()
-        self.r1 = Review()
-        self.s1 = State()
-        self.u1 = User()
-        self.storage = FileStorage()
-        self.storage.save()
-        if os.path.exists("file.json"):
-            pass
-        else:
-            os.mknod("file.json")
+    def testStoreBaseModel(self):
+        """ Test save and reload functions """
+        self.my_model.full_name = "BaseModel Instance"
+        self.my_model.save()
+        bm_dict = self.my_model.to_dict()
+        all_objs = storage.all()
 
-    def tearDown(self):
-        """Tears down the testing environment"""
+        key = bm_dict['__class__'] + "." + bm_dict['id']
+        self.assertEqual(key in all_objs, True)
 
-        del self.b1
-        del self.a1
-        del self.c1
-        del self.p1
-        del self.r1
-        del self.s1
-        del self.u1
-        del self.storage
-        if os.path.exists("file.json"):
-            os.remove("file.json")
+    def testStoreBaseModel2(self):
+        """ Test save, reload and update functions """
+        self.my_model.my_name = "First name"
+        self.my_model.save()
+        bm_dict = self.my_model.to_dict()
+        all_objs = storage.all()
 
-    def test_all(self):
-        """Check the all"""
-        obj = self.storage.all()
-        self.assertIsNotNone(obj)
-        self.assertEqual(type(obj), dict)
-        self.assertIs(obj, self.storage._FileStorage__objects)
+        key = bm_dict['__class__'] + "." + bm_dict['id']
 
-    def test_storage_empty(self):
-        """check the storage is not empty"""
+        self.assertEqual(key in all_objs, True)
+        self.assertEqual(bm_dict['my_name'], "First name")
 
-        self.assertIsNotNone(self.storage.all())
+        create1 = bm_dict['created_at']
+        update1 = bm_dict['updated_at']
 
-    def test_storage_all_type(self):
-        """check the type of storage"""
+        self.my_model.my_name = "Second name"
+        self.my_model.save()
+        bm_dict = self.my_model.to_dict()
+        all_objs = storage.all()
 
-        self.assertEqual(dict, type(self.storage.all()))
+        self.assertEqual(key in all_objs, True)
 
-    def test_new(self):
-        """check the new user"""
-        obj = self.storage.all()
-        self.u1.id = 1234
-        self.u1.name = "Julien"
-        self.storage.new(self.u1)
-        key = "{}.{}".format(self.u1.__class__.__name__, self.u1.id)
-        self.assertIsNotNone(obj[key])
+        create2 = bm_dict['created_at']
+        update2 = bm_dict['updated_at']
 
-    def test_check_json_loading(self):
-        """ Checks if methods from Storage Engine works."""
+        self.assertEqual(create1, create2)
+        self.assertNotEqual(update1, update2)
+        self.assertEqual(bm_dict['my_name'], "Second name")
 
-        with open("file.json") as f:
-            dic = json.load(f)
+    def testHasAttributes(self):
+        """verify if attributes exist"""
+        self.assertEqual(hasattr(FileStorage, '_FileStorage__file_path'), True)
+        self.assertEqual(hasattr(FileStorage, '_FileStorage__objects'), True)
 
-            self.assertEqual(isinstance(dic, dict), True)
+    def testsave(self):
+        """verify if JSON exists"""
+        self.my_model.save()
+        self.assertEqual(os.path.exists(storage._FileStorage__file_path), True)
+        self.assertEqual(storage.all(), storage._FileStorage__objects)
 
-    def test_file_existence(self):
-        """
-        Checks if methods from Storage Engine works.
-        """
+    def testreload(self):
+        """test if reload """
+        self.my_model.save()
+        self.assertEqual(os.path.exists(storage._FileStorage__file_path), True)
+        dobj = storage.all()
+        FileStorage._FileStorage__objects = {}
+        self.assertNotEqual(dobj, FileStorage._FileStorage__objects)
+        storage.reload()
+        for key, value in storage.all().items():
+            self.assertEqual(dobj[key].to_dict(), value.to_dict())
 
-        with open("file.json") as f:
-            self.assertTrue(len(f.read()) > 0)
+    def testSaveSelf(self):
+        """ Check save self """
+        msg = "save() takes 1 positional argument but 2 were given"
+        with self.assertRaises(TypeError) as e:
+            FileStorage.save(self, 100)
 
-    def test_docstrings(self):
-        """Check the docString each function"""
-
-        self.assertTrue(FileStorage.all.__doc__)
-        self.assertTrue(hasattr(FileStorage, 'all'))
-        self.assertTrue(FileStorage.new.__doc__)
-        self.assertTrue(hasattr(FileStorage, 'new'))
-        self.assertTrue(FileStorage.save.__doc__)
-        self.assertTrue(hasattr(FileStorage, 'save'))
-        self.assertTrue(FileStorage.reload.__doc__)
-        self.assertTrue(hasattr(FileStorage, 'reload'))
+        self.assertEqual(str(e.exception), msg)
 
 
 if __name__ == '__main__':
