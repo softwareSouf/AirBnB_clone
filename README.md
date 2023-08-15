@@ -1,6 +1,5 @@
 # AirBnB clone - The console :fire:
 
-```markdown
 ## Introduction
 
 Welcome to our AirBnB clone project! This is the first step towards building a full web application that mimics the functionality of AirBnB. In this project, we'll be focusing on creating a command interpreter to manage AirBnB objects, including creating, retrieving, updating, and deleting operations.
